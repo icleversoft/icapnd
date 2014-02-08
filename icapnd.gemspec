@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Icapnd::VERSION
   spec.authors       = ["iCleversoft"]
   spec.email         = ["iphone@icleversoft.com"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
+  spec.summary       = %q{An APN server & library in which EventMachine daemons maintain a persistent connection to Apple servers and Redis acts as the glue with your Apps.}
+  spec.description   = %q{Simple Server for sending Apple Push Notification messages.}
   spec.homepage      = ""
   spec.license       = "MIT"
 

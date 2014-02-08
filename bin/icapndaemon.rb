@@ -1,0 +1,94 @@
+#!/usr/bin/env ruby
+#$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+
+require 'getoptlong'
+require 'daemons'
+require 'icapnd'
+require 'icapnd/server'
+
+def usage
+  puts "Usage: icapndaemon [switches] --pem path/to/pem"
+  puts " --pem-passphrase path/to/pem         path to pem passphrase"
+  puts " --redis-host [127.0.0.1]             bind address of proxy"
+  puts " --redis-port [6379]                  port proxy listens on"
+  puts " --redis-url [redis://username:pas127.0.0.1:] url of proxy"
+  puts " --log </var/log/apnmachined.log      the path to store the log"
+  puts " --daemon                             to daemonize the server (include full path for pem files then)"
+  puts " --apn-host <gateway.push.apple.com>  the apn server host (use 'sandbox' to use apple sandboxes)"
+  puts " --apn-port <gateway.push.apple.com>  the apn server port "
+  puts " --help                               this message"
+end
+
+def daemonize
+  options = {
+      :backtrace  => true,
+      :ontop      => false,
+      :log_output => true,
+      :app_name => 'icapnd'
+    }
+  Daemons.daemonize(options)
+end
+
+opts = GetoptLong.new(
+  ["--redis-host", "-a", GetoptLong::REQUIRED_ARGUMENT],
+  ["--redis-port", "-p", GetoptLong::REQUIRED_ARGUMENT],
+  ["--redis-uri", "-u", GetoptLong::REQUIRED_ARGUMENT],
+  ["--apn-host", "-b", GetoptLong::REQUIRED_ARGUMENT],
+  ["--apn-port", "-q", GetoptLong::REQUIRED_ARGUMENT],
+  ["--log", "-l", GetoptLong::REQUIRED_ARGUMENT],
+  ["--pem", "-c", GetoptLong::REQUIRED_ARGUMENT], 
+  ["--pem-passphrase", "-s", GetoptLong::REQUIRED_ARGUMENT],
+  ["--daemon", "-d", GetoptLong::NO_ARGUMENT],
+  ["--help", "-h", GetoptLong::NO_ARGUMENT]
+)
+
+redis_host = '127.0.0.1'
+redis_port = 6379
+redis_uri = nil
+apn_host = 'gateway.push.apple.com'
+apn_port = 2195
+pem = nil
+pem_passphrase = nil
+daemon = false
+log = STDOUT
+
+$stdout.sync = true
+
+opts.each do |opt, arg|
+  case opt
+  when '--help'
+    usage
+    exit 1
+  when '--redis-host'
+    redis_host = arg
+  when '--redis-port'
+    redis_port = arg.to_i
+  when '--redis-uri'
+    redis_uri = arg
+  when '--apn-host'
+    if arg == 'sandbox'
+      apn_host = 'gateway.sandbox.push.apple.com'
+    else
+      apn_host = arg 
+    end
+  when '--apn-port'
+    apn_port = arg
+  when '--pem'
+    pem = arg
+  when '--pem-passphrase'
+    pem_passphrase = arg
+  when '--daemon'
+    daemon = true
+  when '--log'
+    log = arg
+  end
+end
+
+if pem.nil?
+  usage
+  exit 1
+else
+  daemonize if daemon
+  server = Icapnd::Server::Server.new(pem, pem_passphrase, redis_host, redis_port, redis_uri, apn_host, apn_port, log)
+  server.start!
+end
