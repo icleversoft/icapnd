@@ -4,7 +4,7 @@ module Icapnd
         attr_accessor :client, :bind_address, :port, :redis
 
       def initialize(pem, pem_passphrase = nil, redis_host = '127.0.0.1', redis_port = 6379, redis_uri = nil, apn_host = 'gateway.push.apple.com', apn_port = 2195, log = '/apnmachined.log')
-        @client = ApnMachine::Server::Client.new(pem, pem_passphrase, apn_host, apn_port)
+        @client = Icapnd::Server::Client.new(pem, pem_passphrase, apn_host, apn_port)
         if redis_uri
           uri = URI.parse(redis_uri)
           @redis = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
