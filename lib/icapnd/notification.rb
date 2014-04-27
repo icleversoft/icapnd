@@ -42,7 +42,8 @@ module Icapnd
 
       Config.logger.debug "TOKEN:#{device_token} | ALERT:#{notif_hash.inspect}"
 
-      [0, 0, bin_token.size, bin_token, 0, j.size, j].pack("ccca*cca*")
+      # [0, 0, bin_token.size, bin_token, 0, j.size, j].pack("ccca*cca*")
+      "\0\0 #{bin_token}\0#{j.length.chr}#{j}"
     end
 
   end
