@@ -47,7 +47,7 @@ module Icapnd
       # data = "\0\0 #{bin_token}\0#{j.length.chr}#{j}"
       # data = [0, 0, 32, bin_token, 0, j.size, j].pack("ccca*cca*")
       # Config.logger.debug "TOKEN:#{bin_token} | BYTES:#{data}"
-      [0, 0, 32, bin_token, 0, j.size, j].pack("ccca*cca*")
+      [0, 0, 32, bin_token, 0, j.bytesize, j].pack("ccca*cca*")
     end
 
   end
