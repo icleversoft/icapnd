@@ -37,16 +37,11 @@ module Icapnd
       bin_token = [device_token].pack('H*')
       raise NoDeviceToken.new("No device token") unless device_token
 
-      # j = Yajl::Encoder.encode(notif_hash).force_encoding(Encoding::UTF_8)
       j = Yajl::Encoder.encode(notif_hash)
       raise PayloadTooLarge.new("The payload is larger than allowed: #{j.length}") if j.size > PAYLOAD_MAX_BYTES
 
       Config.logger.debug "TOKEN:#{device_token} | ALERT:#{notif_hash.inspect}"
 
-      # [0, 0, bin_token.size, bin_token, 0, j.size, j].pack("ccca*cca*")
-      # data = "\0\0 #{bin_token}\0#{j.length.chr}#{j}"
-      # data = [0, 0, 32, bin_token, 0, j.size, j].pack("ccca*cca*")
-      # Config.logger.debug "TOKEN:#{bin_token} | BYTES:#{data}"
       [0, 0, 32, bin_token, 0, j.bytesize, j].pack("ccca*cca*")
     end
 
