@@ -20,8 +20,16 @@ Or install it yourself as:
 ###Server
 You can run server as a daemon by invoking the following command:
 
+For `sandbox`
+
+    icapndaemon --pem path_to_pem --log path_to_log  --daemon --apn-host sandbox
+
+For `production`
+
     icapndaemon --pem path_to_pem --log path_to_log  --daemon
     
+    
+
 ###Client (Sending a notification message)
 In order to send a notification message, you should initially set redis url. 
 This can be done by using the following code:
