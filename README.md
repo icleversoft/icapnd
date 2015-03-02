@@ -5,7 +5,7 @@ It makes use of redis so can be run asynchronously.
 ## Installation
 Add this line to your application's Gemfile:
 
-    gem 'icapnd', '0.0.3', git: 'git://github.com/icleversoft/icapnd.git'
+    gem 'icapnd', '0.0.4', git: 'git://github.com/icleversoft/icapnd.git'
 
 And then execute:
 
