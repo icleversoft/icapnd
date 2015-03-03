@@ -140,7 +140,7 @@ class Notification
       priority = hash_data.delete('priority')
       
       identifier ||= rand(65535) 
-      expiration ||= 0
+      expiration ||= 3600
       priority ||= 10
       
       frame = [ 
