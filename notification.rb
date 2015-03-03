@@ -18,7 +18,7 @@ class Notification
     @max_payload_size = before_ios8 == true ? PAYLOAD_MAX_PRIOR_IOS8 : PAYLOAD_MAX
     @payload = {aps:{}}
 
-    @data = {ios8: before_ios8 == true }
+    @data = {ios8: before_ios8 == false }
 
     @identifier = nil #Arbitrary, opaque value is used for reporting errors on server
     @expiration = nil #UTC epoch in seconds
