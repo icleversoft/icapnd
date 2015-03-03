@@ -1,4 +1,5 @@
 require 'yajl'
+require 'json'
 #http://apple.co/17IAp6G
 #http://apple.co/1EKPH7P
 
@@ -106,7 +107,7 @@ class Notification
     
     @data.merge!({payload: @payload})
     # @payload.to_json
-    @data.to_s
+    @data.to_json
     #   
     # j = Yajl::Encoder.encode( @payload )
     # raise PayloadTooLarge.new("The payload length: #{j.length} is larger than allowed: #{@max_payload_size}") if j.size > @max_payload_size
@@ -114,7 +115,7 @@ class Notification
   end
 
   def valid?
-    @payload.to_s.bytesize < @max_payload_size
+    @payload.to_json.bytesize < @max_payload_size
   end
   
   def push
@@ -127,7 +128,7 @@ class Notification
     hash_data = JSON.parse( encoded_payload )
 
     payload = hash_data.delete('payload')
-    encoded = payload.to_s
+    encoded = payload.to_json
     token = hash_data.delete('device_token')
 
     if hash_data.empty?
