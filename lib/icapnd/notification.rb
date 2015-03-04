@@ -99,10 +99,10 @@ module Icapnd
     def encode_payload
       raise NoDeviceToken.new("No device token") unless device_token
       @data[:device_token] = device_token
-      j = Yajl::Encoder.encode( @payload )
       if !valid?
         @alert = @payload[:aps][:alert]
         if @autotruncate == false || @alert.is_a?(Hash)
+          j = Yajl::Encoder.encode( @payload )
           raise PayloadTooLarge.new("The payload length #{j.bytesize} is larger than allowed: #{@max_payload_size}")
         else
           truncate_alert!
