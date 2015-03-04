@@ -128,7 +128,7 @@ module Icapnd
 
       if hash_data.empty?
         token_bin = [token].pack('H*')
-        data = [0, 0, token_bin, 0, encoded.bytesize, encoded].pack("ccca*cca*")
+        data = [0, 0, 32, token_bin, 0, encoded.bytesize, encoded].pack("ccca*cca*")
       else
         identifier = hash_data.delete('identifier')
         expiration = hash_data.delete('expiration')

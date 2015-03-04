@@ -43,7 +43,8 @@ module Icapnd
               #prepare notification
               #next if Notification.valid?(notification)
               notif_bin = Notification.to_bytes(notification)
-        
+              Config.logger.info "Notification:#{notification}"
+              Config.logger.info "Notification Binary:#{notif_bin}"
               #force deconnection/reconnection after 2 seconds
               if (@last_conn_time + 2) < Time.now.to_i || !@client.connected?
                 Config.logger.error 'Reconnecting connection to APN'
