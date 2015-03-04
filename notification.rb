@@ -13,7 +13,6 @@ class Notification
   attr_reader :payload
   class PayloadTooLarge < StandardError;end
   class NoDeviceToken < StandardError;end
-  class NotSupported < StandardError;end
   
   def initialize( before_ios8 = true )
     @max_payload_size = before_ios8 == true ? PAYLOAD_MAX_PRIOR_IOS8 : PAYLOAD_MAX

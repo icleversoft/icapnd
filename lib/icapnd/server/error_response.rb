@@ -12,6 +12,7 @@ module Icapnd
         6   => "Invalid topic size",
         7   => "Invalid payload size",
         8   => "Invalid token",
+        10  => "Shutdown",
         255 => "None (unknown)"
       }
 
