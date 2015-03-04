@@ -9,7 +9,7 @@ module Icapnd
     PAYLOAD_MAX = 2 * 1024
 
     attr_accessor :device_token, :alert, :badge, :sound, :custom
-    attr_accessor :identifier, :expiration, :priority
+    attr_accessor :identifier, :expiration, :priority, :autotruncate
 
     attr_reader :payload
     class PayloadTooLarge < StandardError;end
@@ -20,7 +20,7 @@ module Icapnd
       @payload = {aps:{}}
 
       @data = {}
-
+      @autotruncate = true
       @identifier = nil #Arbitrary, opaque value is used for reporting errors on server
       @expiration = nil #UTC epoch in seconds
       @priority   = nil #5:Push message is sent at a time that conserves power on the device
@@ -82,13 +82,11 @@ module Icapnd
       value = rand(65535) if value == 0
       @identifier = value
       @data.merge!({identifier: @identifier})
-      # @identifier = [3, 4, value].pack('cnN')
     end
 
     def expiration=(value)
       @expiration = value.to_i
       @data.merge!({expiration: @expiration})
-      # @expiration = [4, 4, value].pack('cnN')
     end
 
     def priority=(value)
@@ -96,21 +94,27 @@ module Icapnd
       value = 10 unless [5, 10].include?(value)
       @priority = value
       @data.merge!({priority: @priority})
-      # @priority = [5, 1, value].pack('cnc')
     end
 
     def encode_payload
       raise NoDeviceToken.new("No device token") unless device_token
       @data[:device_token] = device_token
-
-      raise PayloadTooLarge.new("The payload length: #{j.length} is larger than allowed: #{@max_payload_size}") unless valid?
+      j = Yajl::Encoder.encode( @payload )
+      if !valid?
+        @alert = @payload[:aps][:alert]
+        if @autotruncate == false || @alert.is_a?(Hash)
+          raise PayloadTooLarge.new("The payload length #{j.bytesize} is larger than allowed: #{@max_payload_size}")
+        else
+          truncate_alert!
+        end
+      end
 
       @data.merge!({payload: @payload})
-      @data.to_json
+      Yajl::Encoder.encode( @data )
     end
 
     def valid?
-      @payload.to_json.bytesize < @max_payload_size
+      Yajl::Encoder.encode(@payload).bytesize < @max_payload_size
     end
 
     def push
@@ -120,17 +124,16 @@ module Icapnd
 
     def self.to_bytes(encoded_payload)
       data = nil
-      hash_data = JSON.parse( encoded_payload )
+      hash_data = Yajl::Parser.parse( encoded_payload )
 
-      payload = hash_data.delete('payload')
-      encoded = payload.to_json
+      payload = hash_data.delete('payload') 
+      encoded = Yajl::Encoder.encode( payload )
       token = hash_data.delete('device_token')
 
       if hash_data.empty?
         token_bin = [token].pack('H*')
         data = [0, 0, 32, token_bin, 0, encoded.bytesize, encoded].pack("ccca*cca*")
-      else
-        identifier = hash_data.delete('identifier')
+      else identifier = hash_data.delete('identifier')
         expiration = hash_data.delete('expiration')
         priority = hash_data.delete('priority')
 
@@ -149,7 +152,16 @@ module Icapnd
       end
       data
     end
-
+    
+    private
+    
+    def truncate_alert!
+      new_alert = []
+      @alert.chars.each do |char|
+        new_alert << char if Yajl::Encoder.encode(new_alert.join).bytesize < @max_payload_size - 3
+      end
+      alert = new_alert.join << "..."
+    end
   end
 
 end
