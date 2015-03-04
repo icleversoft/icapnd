@@ -7,6 +7,10 @@ require 'icapnd'
 require 'icapnd/server'
 
 def usage
+  puts "-------------------------------------------------------------"
+  puts "- - - - - - - -[I C A P N D]-[v.0.0.5]- - - - - - - - - - - -"
+  puts "Machine for sending asynchronously push notification messages"
+  puts "-------------------------------------------------------------"
   puts "Usage: icapndaemon [switches] --pem path/to/pem"
   puts " --pem-passphrase path/to/pem         path to pem passphrase"
   puts " --redis-host [127.0.0.1]             bind address of proxy"
