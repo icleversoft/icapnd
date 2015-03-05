@@ -157,8 +157,9 @@ module Icapnd
     
     def truncate_alert!
       new_alert = []
+      max_size = @max_payload_size == PAYLOAD_MAX_PRIOR_IOS8 ? (@max_payload_size - (2 * 32)) : PAYLOAD_MAX
       @alert.chars.each do |char|
-        new_alert << char if Yajl::Encoder.encode(new_alert.join).bytesize < @max_payload_size - 3
+        new_alert << char if Yajl::Encoder.encode(new_alert.join).bytesize < max_size - 3
       end
       alert = new_alert.join << "..."
     end
