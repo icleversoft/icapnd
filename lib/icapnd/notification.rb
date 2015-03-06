@@ -9,7 +9,7 @@ module Icapnd
     PAYLOAD_MAX = 2 * 1024
 
     attr_accessor :device_token, :alert, :badge, :sound, :custom
-    attr_accessor :identifier, :expiration, :priority, :autotruncate
+    attr_accessor :identifier, :expiration, :priority
 
     attr_reader :payload
     class PayloadTooLarge < StandardError;end
@@ -20,7 +20,6 @@ module Icapnd
       @payload = {aps:{}}
 
       @data = {}
-      @autotruncate = true
       @identifier = nil #Arbitrary, opaque value is used for reporting errors on server
       @expiration = nil #UTC epoch in seconds
       @priority   = nil #5:Push message is sent at a time that conserves power on the device
@@ -38,6 +37,7 @@ module Icapnd
     end
 
     def alert=(value)
+      value = value.slice(0, 120) << "..." if value.length > 123
       @payload[:aps][:alert] = value
       @payload
     end
@@ -98,15 +98,11 @@ module Icapnd
 
     def encode_payload
       raise NoDeviceToken.new("No device token") unless device_token
+
       @data[:device_token] = device_token
+
       if !valid?
-        @alert = @payload[:aps][:alert]
-        if @autotruncate == false || @alert.is_a?(Hash)
-          j = Yajl::Encoder.encode( @payload )
-          raise PayloadTooLarge.new("The payload length #{j.bytesize} is larger than allowed: #{@max_payload_size}")
-        else
-          truncate_alert!
-        end
+        raise PayloadTooLarge.new("The payload is larger than max allowed size")
       end
 
       @data.merge!({payload: @payload})
