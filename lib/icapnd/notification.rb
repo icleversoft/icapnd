@@ -108,11 +108,12 @@ module Icapnd
     end
 
     def valid?
-      len = [@payload.to_json].pack("a*")
+      len = [Yajl::Encoder.encode(@payload)].pack("a*")
       return len < @max_payload_size
       #Yajl::Encoder.encode(@payload).bytesize < @max_payload_size
     end
-
+    
+    
     def push
       unless @prepared == true
         prepare_payload
@@ -126,8 +127,8 @@ module Icapnd
 
     def self.to_bytes(encoded_payload)
       data = nil
-      #hash_data = Yajl::Parser.parse( encoded_payload )
-      hash_data = JSON.parse( encoded_payload )
+      hash_data = Yajl::Parser.parse( encoded_payload )
+      # hash_data = JSON.parse( encoded_payload )
 
       payload = hash_data.delete('payload') 
       encoded = Yajl::Encoder.encode( payload )
@@ -156,11 +157,12 @@ module Icapnd
       data
     end
   private 
+    
     def prepare_payload
-      if [@payload.to_json].pack("a*").bytesize > 255
+      if [Yajl::Encoder.encode(@payload)].pack("a*").bytesize > 255
         msg = @payload[:aps].delete(:alert)
         i = 1
-        while( [@payload.to_json].pack("a*").bytesize < 253 )
+        while( [Yajl::Encoder.encode(@payload)].pack("a*").bytesize < 253 )
           mdf_alert = msg.slice(0, i) << "..."
           @payload[:aps][:alert] = mdf_alert 
           i = i + 1
