@@ -9,7 +9,7 @@ module Icapnd
     PAYLOAD_MAX = 2 * 1024
 
     attr_accessor :device_token, :alert, :badge, :sound, :custom
-    attr_accessor :identifier, :expiration, :priority, :autotruncate
+    attr_accessor :identifier, :expiration, :priority
 
     attr_reader :payload
     class PayloadTooLarge < StandardError;end
@@ -20,7 +20,6 @@ module Icapnd
       @payload = {aps:{}}
 
       @data = {}
-      @autotruncate = false
       @identifier = nil #Arbitrary, opaque value is used for reporting errors on server
       @expiration = nil #UTC epoch in seconds
       @priority   = nil #5:Push message is sent at a time that conserves power on the device
@@ -38,7 +37,7 @@ module Icapnd
     end
 
     def alert=(value)
-      value = value.slice(0, 120) << "..." if value.length > 123
+      value = value.slice(0, 120) << "..." if value.is_a?(String) and value.length > 150
       @payload[:aps][:alert] = value
       @payload
     end
@@ -100,43 +99,25 @@ module Icapnd
       # @priority = [5, 1, value].pack('cnc')
     end
 
-    def device_token=( value )
-      @device_token = value
-      @data[:device_token] = device_token
-    end
-
-
     def encode_payload
         raise NoDeviceToken.new("No device token") unless device_token
-        if !valid?
-          @alert = @payload[:aps][:alert]
-          truncate_alert! unless @alert.is_a?(Hash)
-          #if @autotruncate == false || @alert.is_a?(Hash)
-          #  j = Yajl::Encoder.encode( @payload )
-          #  raise PayloadTooLarge.new("The payload length #{j.bytesize} is larger than allowed: #{@max_payload_size}")
-          #else
-          #  truncate_alert!
-          #end
+        @data[:device_token] = device_token
+        if valid?
+          @data.merge!({payload: @payload})
+          Yajl::Encoder.encode( @data )
         end
-
-        @data.merge!({payload: @payload})
-        encoded = Yajl::Encoder.encode( @data )
-        print "\nEncoded:\n#{encoded}\n"
-        encoded
     end
 
     def valid?
-      max_size = PAYLOAD_MAX_PRIOR_IOS8 - 64#@max_payload_size == PAYLOAD_MAX_PRIOR_IOS8 ? PAYLOAD_MAX_PRIOR_IOS8 - 64 : PAYLOAD_MAX
-      payload_size = Yajl::Encoder.encode(@payload[:aps]).bytesize
-      payload_size < max_size 
+      Yajl::Encoder.encode(@payload).bytesize < @max_payload_size
       #@payload.to_json.bytesize < @max_payload_size
     end
 
     def push
-      # raise 'No Redis client' if Config.redis.nil?
-      # socket = Config.redis.rpush "apnmachine.queue", encode_payload
-      redis = Redis.new({host:'127.0.0.1', port:6379, :driver => :hiredis})
-      socket = redis.rpush "apnmachine.queue", encode_payload
+      raise 'No Redis client' if Config.redis.nil?
+      socket = Config.redis.rpush "apnmachine.queue", encode_payload
+      # redis = Redis.new({host:'127.0.0.1', port:6379, :driver => :hiredis})
+      # socket = redis.rpush "apnmachine.queue", encode_payload
     end
 
     def self.to_bytes(encoded_payload)
@@ -168,21 +149,6 @@ module Icapnd
         data = [2, frame.bytes.count, frame].pack('cNa*')
       end
       data
-    end
-  private
-    def truncate_alert!
-      new_alert = []
-      max_size =  PAYLOAD_MAX_PRIOR_IOS8 - 64
-      axd = @payload[:aps]
-      @alert.chars.each do |char|
-        axd[:alert] = new_alert.join
-        enc = [Yajl::Encoder.encode(axd)].pack("a*")
-        break if enc.bytesize >= max_size - 40 
-        new_alert << char
-      end
-      msg = new_alert.join
-      msg << "..."
-      @payload[:aps][:alert] = msg
     end
   end
 
