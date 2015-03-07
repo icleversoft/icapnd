@@ -24,6 +24,7 @@ module Icapnd
       @expiration = nil #UTC epoch in seconds
       @priority   = nil #5:Push message is sent at a time that conserves power on the device
                         #10:Push message is sent immediately
+      @prepared = false
     end
 
     def add_to_payload( hash )
@@ -37,7 +38,6 @@ module Icapnd
     end
 
     def alert=(value)
-      value = value.slice(0, 120) << "..." if value.is_a?(String) and value.length > 150
       @payload[:aps][:alert] = value
       @payload
     end
@@ -100,20 +100,24 @@ module Icapnd
     end
 
     def encode_payload
+        enc_payload = ''
         raise NoDeviceToken.new("No device token") unless device_token
         @data[:device_token] = device_token
-        if valid?
-          @data.merge!({payload: @payload})
-          Yajl::Encoder.encode( @data )
-        end
+        @data.merge!({payload: @payload})
+        enc_payload = @data.to_json
     end
 
     def valid?
-      Yajl::Encoder.encode(@payload).bytesize < @max_payload_size
-      #@payload.to_json.bytesize < @max_payload_size
+      len = [@payload.to_json].pack("a*")
+      return len < @max_payload_size
+      #Yajl::Encoder.encode(@payload).bytesize < @max_payload_size
     end
 
     def push
+      unless @prepared == true
+        prepare_payload
+        @prepared = true
+     end 
       raise 'No Redis client' if Config.redis.nil?
       socket = Config.redis.rpush "apnmachine.queue", encode_payload
       # redis = Redis.new({host:'127.0.0.1', port:6379, :driver => :hiredis})
@@ -122,7 +126,8 @@ module Icapnd
 
     def self.to_bytes(encoded_payload)
       data = nil
-      hash_data = Yajl::Parser.parse( encoded_payload )
+      #hash_data = Yajl::Parser.parse( encoded_payload )
+      hash_data = JSON.parse( encoded_payload )
 
       payload = hash_data.delete('payload') 
       encoded = Yajl::Encoder.encode( payload )
@@ -150,6 +155,17 @@ module Icapnd
       end
       data
     end
+  private 
+    def prepare_payload
+      if [@payload.to_json].pack("a*").bytesize > 255
+        msg = @payload[:aps].delete(:alert)
+        i = 1
+        while( [@payload.to_json].pack("a*").bytesize < 253 )
+          mdf_alert = msg.slice(0, i) << "..."
+          @payload[:aps][:alert] = mdf_alert 
+          i = i + 1
+        end
+      end 
+    end
   end
-
 end
